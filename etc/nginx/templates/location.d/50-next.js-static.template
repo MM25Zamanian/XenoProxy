@@ -1,0 +1,23 @@
+location ~* ^/(_next|__next)/static/ {
+    expires 365d; # Cache aggressively for 1 year
+    add_header Cache-Control "public, max-age=31536000, immutable";
+    access_log off;
+    log_not_found off;
+
+    include /etc/nginx/conf.d/proxt.d/*.conf;
+}
+
+location ~* \.(?:css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|otf|eot)$ {
+    expires 365d; # Cache aggressively for 1 year
+    add_header Cache-Control "public, max-age=31536000, immutable";
+    access_log off; # Don't log access
+    log_not_found off; # Don't log 404s
+
+    # Depending on your setup, you might serve these directly via Nginx 'root'
+    # or proxy them if they are handled by Next.js public folder serving
+    # Example for direct serving (if files are in /var/www/html/):
+    # root /var/www/html;
+    # try_files $uri =404;
+
+    include /etc/nginx/conf.d/proxt.d/*.conf;
+}
