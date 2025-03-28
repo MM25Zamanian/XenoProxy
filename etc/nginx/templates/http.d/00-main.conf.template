@@ -19,6 +19,3 @@ resolver_timeout 5s;
 client_max_body_size $NGINX_CLIENT_MAX_BODY_SIZE;
 
 autoindex $NGINX_AUTOINDEX;
-
-include mime.types;
-default_type application/octet-stream;
