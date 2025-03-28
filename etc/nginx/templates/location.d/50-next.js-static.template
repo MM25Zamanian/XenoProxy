@@ -4,7 +4,7 @@ location ~* ^/(_next|__next)/static/ {
     access_log off;
     log_not_found off;
 
-    include /etc/nginx/conf.d/proxt.d/*.conf;
+    include /etc/nginx/conf.d/proxy.d/*.conf;
 }
 
 location ~* \.(?:css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|otf|eot)$ {
@@ -19,5 +19,5 @@ location ~* \.(?:css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|otf|eot)$ {
     # root /var/www/html;
     # try_files $uri =404;
 
-    include /etc/nginx/conf.d/proxt.d/*.conf;
+    include /etc/nginx/conf.d/proxy.d/*.conf;
 }
