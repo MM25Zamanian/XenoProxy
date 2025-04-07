@@ -1,3 +1,3 @@
-limit_except HEAD GET OPTIONS {
+limit_except HEAD POST PUT PATCH DELETE GET OPTIONS {
   deny all;
 }

@@ -1,4 +1,5 @@
-add_header  Server AlwatrWebServer always;
+add_header  Server GecutWebServer always;
+add_header  Proxy XenoProxy always;
 add_header  X-Frame-Options SAMEORIGIN;
 add_header  X-Content-Type-Options nosniff;
 add_header  X-XSS-Protection "1; mode=block";
