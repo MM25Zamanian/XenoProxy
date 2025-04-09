@@ -3,5 +3,5 @@ location ~* ^/storage/ {
 
     expires 365d; # کش کردن برای ۱ سال
     add_header Cache-Control "public, max-age=31536000, immutable"; # هدرهای کش قوی
-    autoindex off;
+    autoindex on;
 }
