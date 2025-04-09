@@ -2,6 +2,7 @@ FROM docker.io/library/nginx:1.27.4-alpine-slim
 
 RUN rm -rfv /docker-entrypoint* /etc/nginx/conf.d/* /etc/nginx/nginx.conf /var/www/html /usr/share/nginx/html /data
 COPY etc/nginx/ /etc/nginx/
+COPY default-data/ /default-data/
 RUN chmod a+rx /etc/nginx/entrypoint.sh /etc/nginx/entrypoint.d/*.sh
 # RUN ls -RlAhF /etc/nginx
 
