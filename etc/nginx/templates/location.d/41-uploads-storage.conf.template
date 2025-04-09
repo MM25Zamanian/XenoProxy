@@ -1,7 +1,0 @@
-location ~* ^/storage/ {
-    root $NGINX_DOCUMENT_ROOT/; # مسیر فایل‌ها از متغیر محیطی خوانده می‌شود (مسیر پایه)
-
-    expires 365d; # کش کردن برای ۱ سال
-    add_header Cache-Control "public, max-age=31536000, immutable"; # هدرهای کش قوی
-    autoindex on;
-}
