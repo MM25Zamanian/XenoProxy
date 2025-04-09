@@ -1,5 +1,5 @@
 location ~* ^/uploads/ {
-    alias $UPLOADS_STORAGE_PATH/; # مسیر فایل‌ها از متغیر محیطی خوانده می‌شود (مسیر پایه)
+    alias $UPLOADS_STORAGE_PATH; # مسیر فایل‌ها از متغیر محیطی خوانده می‌شود (مسیر پایه)
     expires 365d;              # کش کردن برای ۱ سال
     add_header Cache-Control "public, max-age=31536000, immutable"; # هدرهای کش قوی
 }
