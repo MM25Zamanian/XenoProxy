@@ -1,0 +1,14 @@
+location ~* ^/uploads/ {
+    alias $UPLOADS_STORAGE_PATH/; # مسیر فایل‌ها از متغیر محیطی خوانده می‌شود (مسیر پایه)
+
+    # اضافه کردن قانون برای حذف اسلش انتهایی از درخواست‌های فایل
+    if ($request_uri ~ "^(/uploads/.*)\.(jpg|jpeg|png|gif|webp|svg|pdf|...)/$") {
+        return 301 $1.$2;
+    }
+
+    add_header X-Location-Processed "Uploads-Storage" always;
+
+    expires 365d; # کش کردن برای ۱ سال
+    add_header Cache-Control "public, max-age=31536000, immutable"; # هدرهای کش قوی
+    autoindex off;
+}
