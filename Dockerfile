@@ -8,7 +8,7 @@ RUN rm -rfv /docker-entrypoint* /etc/nginx/conf.d/* /etc/nginx/nginx.conf /var/w
 COPY etc/nginx/ /etc/nginx/
 COPY default-data/ /default-data/
 RUN chmod a+rx /etc/nginx/entrypoint.sh /etc/nginx/entrypoint.d/*.sh
-RUN ls -RlahF /etc/nginx /default-data /data
+# RUN ls -RlahF /etc/nginx /default-data /data
 
 # Expose port
 EXPOSE 80
