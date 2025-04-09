@@ -1,3 +1,5 @@
 location / {
   include /etc/nginx/conf.d/location.d/root.d/*.conf;
+
+  try_files $uri @nextjs;
 }
