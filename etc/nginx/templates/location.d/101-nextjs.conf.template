@@ -1,5 +1,5 @@
 location @nextjs {
-    limit_req zone=req_zone burst=$NGINX_LIMIT_REQ_BURST nodelay;
+  limit_req zone=req_zone burst=$NGINX_LIMIT_REQ_BURST nodelay;
 
-    include /etc/nginx/conf.d/proxy.d/*.conf;
+  include /etc/nginx/conf.d/proxy.d/*.conf;
 }
