@@ -1,12 +1,3 @@
-location ~* ^/(_next|__next)/static/ {
-    expires 365d; # Cache aggressively for 1 year
-    add_header Cache-Control "public, max-age=31536000, immutable";
-    access_log off;
-    log_not_found off;
-
-    include /etc/nginx/conf.d/proxy.d/*.conf;
-}
-
 location ~* ^/(_next|__next)/.*\.(?:css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|otf|eot)$ {
     expires 365d; # Cache aggressively for 1 year
     add_header Cache-Control "public, max-age=31536000, immutable";

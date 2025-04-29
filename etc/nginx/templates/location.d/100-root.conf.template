@@ -1,3 +1,13 @@
+location ~* ^/(_next|__next)/static/ {
+  expires 365d; # Cache aggressively for 1 year
+  add_header Cache-Control "public, max-age=31536000, immutable";
+  access_log off;
+  log_not_found off;
+
+  try_files $uri @nextjs;
+}
+
+
 location / {
   include /etc/nginx/conf.d/location.d/root.d/*.conf;
 
