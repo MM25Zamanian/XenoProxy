@@ -6,7 +6,7 @@ ARG NGINX_VERSION=1.27.4
 
 FROM alpine:${ALPINE_VERSION} AS builder
 
-# 1. بسته‌های مورد نیاز برای ساخت
+# 1. نصب ابزارهای مورد نیاز برای build
 RUN apk add --no-cache \
     build-base \
     curl \
@@ -18,14 +18,15 @@ RUN apk add --no-cache \
 
 WORKDIR /usr/src
 
-# 2. دانلود سورس Nginx و کلون ماژول Zstd
-RUN curl -fsSL http://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz \
-        | tar zx --strip-components=1 -C nginx-src && \
+# 2. ساخت پوشه nginx-src و دانلود/اکسترکت Nginx + کلون ماژول Zstd
+RUN mkdir -p nginx-src && \
+    curl -fsSL https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz \
+      | tar zx --strip-components=1 -C nginx-src && \
     git clone --depth=1 https://github.com/tokers/zstd-nginx-module.git zstd-module
 
 WORKDIR /usr/src/nginx-src
 
-# 3. کانفیگ و ساخت ماژول به صورت dynamic
+# 3. کانفیگ و ساخت ماژول به صورت dynamic (+ حذف نمادها از باینری)
 RUN ./configure \
        --prefix=/etc/nginx \
        --sbin-path=/usr/sbin/nginx \
@@ -45,15 +46,12 @@ RUN ./configure \
        --with-http_gzip_static_module \
        --with-compat \
        --with-ld-opt='-s' \
-       --add-dynamic-module=../zstd-module/filter \
-    && make -j"$(nproc)" modules
+       --add-dynamic-module=../zstd-module/filter && \
+    make -j"$(nproc)" modules
 
-# 4. نصب فقط ماژول‌ها و فایل‌های مورد نیاز
-RUN mkdir -p /build-output/{etc/nginx,usr/lib/nginx/modules,usr/sbin} && \
-    cp objs/ngx_http_zstd_filter_module.so /build-output/usr/lib/nginx/modules/ && \
-    # اگر نیاز دارید nginx binary رو هم از ابتدا بسازید، uncomment کنید:
-    # make -j"$(nproc)" && make install DESTDIR=/build-output \
-    :
+# 4. کپی ماژول ساخته‌شده به فولدر خروجی
+RUN mkdir -p /build-output/{etc/nginx,usr/lib/nginx/modules} && \
+    cp objs/ngx_http_zstd_filter_module.so /build-output/usr/lib/nginx/modules/
 
 ########################################
 # Stage 2: Runtime
@@ -63,29 +61,29 @@ FROM alpine:${ALPINE_VERSION}
 ARG NGINX_UID=101
 ARG NGINX_GID=101
 
-# 1. وابستگی‌های runtime و tini
+# 1. وابستگی‌های runtime + tini
 RUN apk add --no-cache \
     libssl3 \
     pcre \
     zlib \
     tini
 
-# 2. ایجاد کاربر غیر روت
+# 2. کاربر غیر روت برای اجرای Nginx
 RUN addgroup -g ${NGINX_GID} -S nginx && \
     adduser -u ${NGINX_UID} -D -S -G nginx nginx
 
-# 3. کپی باینری و ماژول‌ها
+# 3. کپی باینری Nginx و ماژول‌ها
 COPY --from=builder /build-output/usr/sbin/nginx /usr/sbin/nginx
 COPY --from=builder /build-output/etc/nginx /etc/nginx
 COPY --from=builder /build-output/usr/lib/nginx/modules /usr/lib/nginx/modules
 
-# 4. (اختیاری) کپی html پیش‌فرض
+# 4. (اختیاری) کپی محتوای html پیش‌فرض
 COPY --from=builder /build-output/etc/nginx/html /usr/share/nginx/html
 
 # 5. کپی تنظیمات سفارشی شما
 COPY etc/nginx/ /etc/nginx/
 
-# 6. دسترسی‌ها و دایرکتوری‌های cache/log
+# 6. ایجاد دایرکتوری‌های cache/log و تنظیم مالکیت
 RUN mkdir -p /var/cache/nginx && \
     chown -R nginx:nginx /var/cache/nginx /var/run /var/log/nginx
 
