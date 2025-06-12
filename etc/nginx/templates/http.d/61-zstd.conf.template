@@ -1,0 +1,38 @@
+# -- Zstd Settings --
+
+# Enable zstd on-the-fly compression.
+zstd on;
+
+# Use pre-compressed .zst files if they exist.
+# This is HIGHLY recommended for static assets for maximum performance.
+# Nginx will serve style.css.zst if a request for style.css comes.
+zstd_static on;
+
+# Set the compression level (1-22).
+# Level 5 is a great balance between speed and compression ratio for dynamic content.
+# For pre-compressing static files, you can use a higher level like 19.
+zstd_comp_level 9;
+
+# Minimum content length to compress. Avoids compressing very small files.
+zstd_min_length 256;
+
+# Define MIME types to compress.
+# Do NOT add already compressed formats like jpg, png, woff2, etc.
+zstd_types
+  application/atom+xml
+  application/javascript
+  application/json
+  application/rss+xml
+  application/vnd.ms-fontobject
+  application/x-font-ttf
+  application/x-web-app-manifest+json
+  application/xhtml+xml
+  application/xml
+  font/opentype
+  image/svg+xml
+  image/x-icon
+  text/css
+  text/html
+  text/plain
+  text/x-component
+  text/xml;
