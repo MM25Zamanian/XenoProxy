@@ -22,7 +22,7 @@ WORKDIR /usr/src
 # Download and extract Nginx source code and the Zstd module source
 RUN curl -O https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz && \
     tar -zxf nginx-${NGINX_VERSION}.tar.gz && \
-    git clone https://github.com/fongie/ngx_http_zstd_filter_module.git
+    git clone https://github.com/tokers/zstd-nginx-module.git
 
 # Enter the Nginx source directory
 WORKDIR /usr/src/nginx-${NGINX_VERSION}
@@ -48,7 +48,7 @@ RUN ./configure \
     --with-http_v2_module \
     --with-http_gzip_static_module \
     --with-compat \
-    --add-dynamic-module=/usr/src/ngx_http_zstd_filter_module && \
+    --add-dynamic-module=/usr/src/zstd-nginx-module && \
     make -j$(nproc) && \
     make install DESTDIR=/build-output
 
