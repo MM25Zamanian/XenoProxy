@@ -1,9 +1,34 @@
 proxy_pass http://$NEXT_HOST:$NEXT_PORT;
+
+# === Enable HTTP/1.1 for WebSocket + streaming ===
 proxy_http_version 1.1;
 proxy_set_header Upgrade $http_upgrade;
-proxy_set_header Connection 'upgrade';
+proxy_set_header Connection $http_connection;
+
+# === Preserve original Host and client IP ===
 proxy_set_header Host $host;
-proxy_cache_bypass $http_upgrade;
 proxy_set_header X-Real-IP $remote_addr;
 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 proxy_set_header X-Forwarded-Proto $scheme;
+
+# === Forward all request headers, especially Accept-CH, RSC, etc. ===
+proxy_pass_request_headers on;
+proxy_set_header Accept-CH $http_accept_ch;
+proxy_set_header Sec-CH-Prefers-Color-Scheme $http_sec_ch_prefers_color_scheme;
+proxy_set_header Viewport-Width $http_viewport_width;
+proxy_set_header Width $http_width;
+proxy_set_header DPR $http_dpr;
+proxy_set_header RSC $http_rsc;
+proxy_set_header Next-Router-State $http_next_router_state;
+
+# === Cache (only safe responses) ===
+proxy_cache_key "$scheme$request_method$host$request_uri|$device_type";
+proxy_cache next_cache;
+proxy_cache_valid 200 60s;
+proxy_cache_use_stale updating error timeout http_500 http_502 http_503;
+proxy_cache_lock on;
+
+# === Optional: Mark cache status for observability ===
+add_header X-Device-Type $device_type;
+add_header X-Cache-Key $scheme$request_method$host$request_uri|$device_type;
+add_header X-Cache-Status $upstream_cache_status;
