@@ -1,0 +1,4 @@
+map $http_user_agent $device_type {
+    default desktop;
+    "~*iphone|ipod|ipad|android|blackberry|bb10|mini|windows\sce|palm" mobile;
+}
