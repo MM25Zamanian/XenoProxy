@@ -48,7 +48,7 @@ RUN ./configure \
     --with-http_v2_module \
     --with-http_gzip_static_module \
     --with-compat \
-    --add-dynamic-module=/usr/src/zstd-nginx-module && \
+    --add-dynamic-module=/usr/src/zstd-nginx-module/filter/ && \
     make -j$(nproc) && \
     make install DESTDIR=/build-output
 
