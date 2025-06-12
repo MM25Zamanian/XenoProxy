@@ -1,12 +1,12 @@
-# Stage 1: Build Nginx from source with the Zstd module
-# We use a specific version of Alpine for reproducibility.
+########################################
+# Stage 1: Builder
+########################################
 ARG ALPINE_VERSION=3.20
-FROM alpine:${ALPINE_VERSION} AS builder
-
-# Set Nginx version as a build-time argument
 ARG NGINX_VERSION=1.27.4
 
-# Install build dependencies
+FROM alpine:${ALPINE_VERSION} AS builder
+
+# 1. بسته‌های مورد نیاز برای ساخت
 RUN apk add --no-cache \
     build-base \
     curl \
@@ -16,90 +16,85 @@ RUN apk add --no-cache \
     pcre-dev \
     zlib-dev
 
-# Set working directory
 WORKDIR /usr/src
 
-# Download and extract Nginx source code and the Zstd module source
-RUN curl -O https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz && \
-    tar -zxf nginx-${NGINX_VERSION}.tar.gz && \
-    git clone https://github.com/tokers/zstd-nginx-module.git
+# 2. دانلود سورس Nginx و کلون ماژول Zstd
+RUN curl -fsSL http://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz \
+        | tar zx --strip-components=1 -C nginx-src && \
+    git clone --depth=1 https://github.com/tokers/zstd-nginx-module.git zstd-module
 
-# Enter the Nginx source directory
-WORKDIR /usr/src/nginx-${NGINX_VERSION}
+WORKDIR /usr/src/nginx-src
 
-# Configure Nginx build with necessary modules and paths.
-# Logs are redirected to stdout/stderr, which is a container best practice.
-# Temporary file paths are set for caching.
+# 3. کانفیگ و ساخت ماژول به صورت dynamic
 RUN ./configure \
-    --prefix=/etc/nginx \
-    --sbin-path=/usr/sbin/nginx \
-    --modules-path=/usr/lib/nginx/modules \
-    --conf-path=/etc/nginx/nginx.conf \
-    --error-log-path=stderr \
-    --http-log-path=stdout \
-    --pid-path=/var/run/nginx.pid \
-    --lock-path=/var/run/nginx.lock \
-    --http-client-body-temp-path=/var/cache/nginx/client_temp \
-    --http-proxy-temp-path=/var/cache/nginx/proxy_temp \
-    --http-fastcgi-temp-path=/var/cache/nginx/fastcgi_temp \
-    --http-uwsgi-temp-path=/var/cache/nginx/uwsgi_temp \
-    --http-scgi-temp-path=/var/cache/nginx/scgi_temp \
-    --with-http_ssl_module \
-    --with-http_v2_module \
-    --with-http_gzip_static_module \
-    --with-compat \
-    --add-dynamic-module=/usr/src/zstd-nginx-module/filter/ && \
-    make -j$(nproc) && \
-    make install DESTDIR=/build-output
+       --prefix=/etc/nginx \
+       --sbin-path=/usr/sbin/nginx \
+       --modules-path=/usr/lib/nginx/modules \
+       --conf-path=/etc/nginx/nginx.conf \
+       --error-log-path=stderr \
+       --http-log-path=stdout \
+       --pid-path=/var/run/nginx.pid \
+       --lock-path=/var/run/nginx.lock \
+       --http-client-body-temp-path=/var/cache/nginx/client_temp \
+       --http-proxy-temp-path=/var/cache/nginx/proxy_temp \
+       --http-fastcgi-temp-path=/var/cache/nginx/fastcgi_temp \
+       --http-uwsgi-temp-path=/var/cache/nginx/uwsgi_temp \
+       --http-scgi-temp-path=/var/cache/nginx/scgi_temp \
+       --with-http_ssl_module \
+       --with-http_v2_module \
+       --with-http_gzip_static_module \
+       --with-compat \
+       --with-ld-opt='-s' \
+       --add-dynamic-module=../zstd-module/filter \
+    && make -j"$(nproc)" modules
 
-# ---
-# Stage 2: Create the final, optimized image
-# We use the same Alpine base for a smaller final image.
+# 4. نصب فقط ماژول‌ها و فایل‌های مورد نیاز
+RUN mkdir -p /build-output/{etc/nginx,usr/lib/nginx/modules,usr/sbin} && \
+    cp objs/ngx_http_zstd_filter_module.so /build-output/usr/lib/nginx/modules/ && \
+    # اگر نیاز دارید nginx binary رو هم از ابتدا بسازید، uncomment کنید:
+    # make -j"$(nproc)" && make install DESTDIR=/build-output \
+    :
+
+########################################
+# Stage 2: Runtime
+########################################
 FROM alpine:${ALPINE_VERSION}
 
-# Set arguments for user/group IDs for security
 ARG NGINX_UID=101
 ARG NGINX_GID=101
 
-# Install runtime dependencies only
-# tini is used as a lightweight init system to properly handle signals
+# 1. وابستگی‌های runtime و tini
 RUN apk add --no-cache \
     libssl3 \
     pcre \
     zlib \
     tini
 
-# Create a non-root user and group for running Nginx
+# 2. ایجاد کاربر غیر روت
 RUN addgroup -g ${NGINX_GID} -S nginx && \
-    adduser -u ${NGINX_UID} -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx
+    adduser -u ${NGINX_UID} -D -S -G nginx nginx
 
-# Copy compiled Nginx binary and default configuration from the builder stage
+# 3. کپی باینری و ماژول‌ها
 COPY --from=builder /build-output/usr/sbin/nginx /usr/sbin/nginx
 COPY --from=builder /build-output/etc/nginx /etc/nginx
 COPY --from=builder /build-output/usr/lib/nginx/modules /usr/lib/nginx/modules
 
-# Copy default Nginx html content
+# 4. (اختیاری) کپی html پیش‌فرض
 COPY --from=builder /build-output/etc/nginx/html /usr/share/nginx/html
 
-# Copy custom configuration from the build context.
-# This will overwrite the default nginx.conf.
-# Place your custom nginx.conf in an 'etc/nginx' directory next to your Dockerfile.
+# 5. کپی تنظیمات سفارشی شما
 COPY etc/nginx/ /etc/nginx/
 
-# Create necessary directories and set correct permissions for the non-root user
-RUN mkdir -p /var/cache/nginx/ && \
+# 6. دسترسی‌ها و دایرکتوری‌های cache/log
+RUN mkdir -p /var/cache/nginx && \
     chown -R nginx:nginx /var/cache/nginx /var/run /var/log/nginx
 
-# Use tini as the entrypoint to manage the Nginx process
-ENTRYPOINT ["/sbin/tini", "--"]
+# 7. Healthcheck برای اطمینان از در دسترس بودن Nginx
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s \
+  CMD wget --quiet --spider http://localhost:80/ || exit 1
 
-# The command to run Nginx in the foreground
-# The 'daemon off;' directive is essential for containerization.
+ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["nginx", "-g", "daemon off;"]
 
-# Expose standard HTTP and HTTPS ports
-EXPOSE 80
-EXPOSE 443
-
-# Set the stop signal for graceful shutdown of Nginx
+EXPOSE 80 443
 STOPSIGNAL SIGQUIT
